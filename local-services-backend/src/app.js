@@ -13,7 +13,7 @@ app.use(cors());
 app.use(express.json());
 
 // ROUTES — we'll uncomment these as we build each phase
-// app.use('/api/auth',      require('./routes/auth'));
+app.use('/api/auth',      require('./routes/auth'));
 // app.use('/api/providers', require('./routes/providers'));
 // app.use('/api/search',    require('./routes/search'));
 // app.use('/api/reviews',   require('./routes/reviews'));
