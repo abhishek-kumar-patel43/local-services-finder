@@ -4,34 +4,25 @@ const db = require('../config/db');
 const router = express.Router();
 
 // ─────────────────────────────────────────
-// SEARCH PROVIDERS API
+// SEARCH PROVIDERS
 // GET /api/search?service=electrician&pin_code=201301
-// Optional filters:
-//   - min_price
-//   - max_price
-//   - sort (default: rating)
-// No authentication required
+// Optional: &min_price=100&max_price=500&sort=rating
+// No login needed — anyone can search
 // ─────────────────────────────────────────
 router.get('/', async (req, res) => {
   try {
-
-    // Extract query parameters
+    // Pull all possible query parameters from the URL
     const { service, pin_code, min_price, max_price, sort } = req.query;
 
-    // Validate required parameters
+    // service and pin_code are required for search
     if (!service || !pin_code) {
       return res.status(400).json({
         message: 'service and pin_code are required query parameters'
       });
     }
 
-    // Prepare search pattern for partial matching
-    const servicePattern = `%${service}%`;
-
-    // ─────────────────────────────────────────
-    // BASE QUERY
-    // Fetch providers matching service + pin_code
-    // ─────────────────────────────────────────
+    // We build the SQL query dynamically based on what filters are provided
+    // $1 and $2 are placeholders — we fill them safely to prevent SQL injection
     let query = `
       SELECT
         p.id,
@@ -49,54 +40,39 @@ router.get('/', async (req, res) => {
         AND p.pin_code = $2
     `;
 
-    // Values for parameterized query
-    const queryValues = [servicePattern, pin_code];
+    // We keep a list of values to pass in safely
+    // $1 = service (with % for partial match), $2 = pin_code
+    const values = [`%${service}%`, pin_code];
 
-    // ─────────────────────────────────────────
-    // OPTIONAL PRICE FILTERS
-    // Dynamically append conditions if provided
-    // ─────────────────────────────────────────
+    // Dynamically add price filters if provided
+    // Each new condition gets the next $ number
     if (min_price) {
-      queryValues.push(min_price);
-
-      query += `
-        AND CAST(
-          SPLIT_PART(p.price_range, '-', 1) AS INTEGER
-        ) >= $${queryValues.length}
-      `;
+      values.push(min_price);
+      query += ` AND CAST(SPLIT_PART(p.price_range, '-', 1) AS INTEGER) >= $${values.length}`;
     }
 
     if (max_price) {
-      queryValues.push(max_price);
-
-      query += `
-        AND CAST(
-          SPLIT_PART(p.price_range, '-', 2) AS INTEGER
-        ) <= $${queryValues.length}
-      `;
+      values.push(max_price);
+      query += ` AND CAST(SPLIT_PART(p.price_range, '-', 2) AS INTEGER) <= $${values.length}`;
     }
 
-    // ─────────────────────────────────────────
-    // SORTING (default: highest rating)
-    // ─────────────────────────────────────────
-    const sortQuery = ` ORDER BY p.avg_rating DESC`;
-    query += sortQuery;
+    // Sort results — default is by highest rating
+    if (sort === 'rating') {
+      query += ` ORDER BY p.avg_rating DESC`;
+    } else {
+      query += ` ORDER BY p.avg_rating DESC`; // default sort
+    }
 
-    // Execute query
-    const result = await db.query(query, queryValues);
+    const result = await db.query(query, values);
 
-    // Send response
     res.json({
       count: result.rows.length,
       providers: result.rows,
     });
 
   } catch (error) {
-    console.error('Search error:', error);
-
-    res.status(500).json({
-      message: 'Server error'
-    });
+    console.error('Search error:', error.message);
+    res.status(500).json({ message: 'Server error' });
   }
 });
 
