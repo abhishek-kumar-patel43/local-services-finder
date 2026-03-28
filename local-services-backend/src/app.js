@@ -16,7 +16,7 @@ app.use(express.json());
 app.use('/api/auth',      require('./routes/auth'));
 app.use('/api/providers', require('./routes/providers'));
 app.use('/api/search',    require('./routes/search'));
-// app.use('/api/reviews',   require('./routes/reviews'));
+app.use('/api/reviews',   require('./routes/reviews'));
 
 // Health check route — just to confirm the server is alive
 app.get('/api/health', (req, res) => {
