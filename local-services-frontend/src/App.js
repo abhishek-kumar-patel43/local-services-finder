@@ -1,10 +1,11 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
-import Navbar        from './components/Navbar';
-import LoginPage     from './pages/LoginPage';
-import SignupPage    from './pages/SignupPage';
-import SearchPage    from './pages/SearchPage';
-import ProviderPage  from './pages/ProviderPage';
+import Navbar       from './components/Navbar';
+import LoginPage    from './pages/LoginPage';
+import SignupPage   from './pages/SignupPage';
+import SearchPage   from './pages/SearchPage';
+import ProviderPage from './pages/ProviderPage';
+import Dashboard    from './pages/Dashboard';
 
 const PrivateRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -24,9 +25,7 @@ function App() {
             <Route path="/signup"       element={<SignupPage />} />
             <Route path="/provider/:id" element={<ProviderPage />} />
             <Route path="/dashboard"    element={
-              <div className="text-center mt-20 text-gray-400">
-                Dashboard coming soon
-              </div>
+              <PrivateRoute><Dashboard /></PrivateRoute>
             } />
           </Routes>
         </div>
